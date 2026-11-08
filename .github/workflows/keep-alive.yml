@@ -1,0 +1,42 @@
+# Streamlit Community Cloud puts free apps to sleep after a period without
+# visitors, and the next visitor has to click "Yes, get this app back up!".
+# This workflow visits the app in a real (headless) browser every few hours -
+# a plain HTTP request is not enough - and clicks that button if it shows up.
+#
+# Setup: Settings -> Secrets and variables -> Actions -> Variables tab ->
+# New repository variable named STREAMLIT_APP_URL with your app's URL,
+# e.g. https://team-taskflow.streamlit.app
+#
+# Note: GitHub pauses scheduled workflows in repositories with no commits for
+# 60 days. If that happens, re-enable it from the Actions tab (or push a commit).
+
+name: Keep Streamlit app awake
+
+on:
+  schedule:
+    - cron: "17 */6 * * *" # every 6 hours
+  workflow_dispatch: # allows a manual run from the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright
+        run: |
+          pip install playwright==1.47.0
+          python -m playwright install --with-deps chromium
+
+      - name: Visit the app and wake it if asleep
+        env:
+          APP_URL: ${{ vars.STREAMLIT_APP_URL }}
+        run: python .github/scripts/wake_streamlit.py

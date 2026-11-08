@@ -5,6 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from ..config import APP_NAME, APP_TAGLINE, MIN_PASSWORD_LENGTH, THEME_OPTIONS
+from ..demo import start_guest_session
 from ..users import authenticate, create_user
 from ..utils import escape_html
 from .common import flash, render_flashes
@@ -68,6 +69,19 @@ def _register_form() -> None:
             st.error(message)
 
 
+def _demo_button() -> None:
+    """One click into a ready-made workspace, no registration needed."""
+    if st.button("Try the demo - no sign-up needed", type="primary", width="stretch"):
+        user, message = start_guest_session()
+        if user:
+            st.session_state.user = user
+            flash(f"{message} Register your own account any time.", "success")
+            st.rerun()
+        else:
+            st.error(message)
+    st.caption("Or log in / register below.")
+
+
 def show_auth_page() -> None:
     """Render the whole unauthenticated view."""
     st.session_state.setdefault("ui_theme", THEME_OPTIONS[0])
@@ -79,6 +93,8 @@ def show_auth_page() -> None:
         st.selectbox("Visual Theme", THEME_OPTIONS, key="ui_theme")
         render_flashes()
         _header()
+
+        _demo_button()
 
         login_tab, register_tab = st.tabs(["Login", "Register"])
         with login_tab:

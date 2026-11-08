@@ -427,7 +427,8 @@ def bulk_update_tasks(
         updates.append("archived = ?")
         params.append(1 if archive else 0)
         if not archive:
-            updates.append("status = COALESCE(previous_status, status)")
+            if status is None:
+                updates.append("status = COALESCE(previous_status, status)")
             updates.append("previous_status = NULL")
     if not updates:
         return False, "No changes selected."

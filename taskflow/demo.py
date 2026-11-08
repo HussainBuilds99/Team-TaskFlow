@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import secrets
+import threading
 from datetime import date, timedelta
 
 from . import db
+from .activity import log_activity
 from .tasks import create_task
 from .users import create_user, get_all_users
 
@@ -114,3 +117,74 @@ def seed_demo_data(admin_user) -> tuple[bool, str]:
         f"Added {len(DEMO_USERS)} demo teammates and {created} tasks. "
         f"They all sign in with the password '{DEMO_PASSWORD}'."
     )
+
+
+# --- One-click guest demo ---------------------------------------------------
+# Lets a visitor (e.g. a recruiter following a portfolio link) explore the app
+# without registering. Everyone who clicks "Try the demo" shares one guest
+# account; its sample tasks are re-created whenever none are left active.
+
+GUEST_USERNAME = "demo_guest"
+GUEST_FULL_NAME = "Demo Visitor"
+GUEST_EMAIL = "demo_guest@example.com"
+
+_guest_lock = threading.Lock()
+
+
+def _guest_row() -> dict | None:
+    return db.fetch_one(
+        "SELECT id, full_name, email, username, created_at FROM users "
+        "WHERE LOWER(username) = LOWER(?)",
+        (GUEST_USERNAME,),
+    )
+
+
+def _ensure_guest_tasks(guest) -> None:
+    """Give the guest a fresh set of sample tasks when it has no active ones."""
+    row = db.fetch_one(
+        "SELECT COUNT(*) AS count FROM tasks "
+        "WHERE archived = 0 AND (creator_id = ? OR assignee_id = ?)",
+        (guest["id"], guest["id"]),
+    )
+    if row and row["count"] > 0:
+        return
+
+    for full_name, email, username in DEMO_USERS:
+        create_user(full_name, email, username, DEMO_PASSWORD)
+    user_map = {user["username"]: user["id"] for user in get_all_users()}
+
+    for index, (title, description, category, assignee_id, due, priority, status, progress, tags) in enumerate(
+        _demo_tasks(user_map)
+    ):
+        # Every other task goes to the guest, so "Only my tasks" and the
+        # edit/delete controls have something to show straight away.
+        assignee = guest["id"] if index % 2 == 0 else assignee_id
+        create_task(
+            title,
+            description,
+            category,
+            guest["id"],
+            assignee,
+            due.isoformat(),
+            priority,
+            status,
+            progress,
+            tags,
+        )
+
+
+def start_guest_session() -> tuple[dict | None, str]:
+    """Return the shared guest account (creating it and its sample data if needed)."""
+    with _guest_lock:
+        guest = _guest_row()
+        if guest is None:
+            # A random password nobody knows: the guest is reachable only through
+            # this button, never through the normal login form.
+            create_user(GUEST_FULL_NAME, GUEST_EMAIL, GUEST_USERNAME, secrets.token_urlsafe(24))
+            guest = _guest_row()
+        if guest is None:
+            return None, "The demo is unavailable right now. Please register instead."
+        _ensure_guest_tasks(guest)
+
+    log_activity(guest["id"], "Login", "Guest started a demo session")
+    return guest, "You're exploring the demo workspace."

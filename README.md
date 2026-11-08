@@ -12,6 +12,8 @@ A collaborative task manager for small teams, clubs, and classrooms, built with
   assignee, and deleted/archived by its creator
 - CSV export/import and an audit trail of every action
 - Three built-in visual themes
+- One-click **Try the demo** button: explore a ready-made workspace without
+  registering
 
 ## Running locally
 
@@ -54,6 +56,29 @@ SQLite or Postgres, and connection strings starting with `postgres://` or
 `postgresql://` are normalised automatically to use the driver this app
 ships with.
 
+> **Attachments** are still written to the local `task_uploads/` folder even
+> when Postgres is configured, so on Streamlit Community Cloud uploaded files
+> are lost when the app restarts. Accounts, tasks, comments and checklists are
+> unaffected.
+
+### Keeping the hosted app awake
+
+Streamlit Community Cloud puts free apps to sleep after a period without
+visitors, and the next visitor then has to click *"Yes, get this app back
+up!"*. The workflow in `.github/workflows/keep-alive.yml` visits the app in a
+headless browser every 6 hours and clicks that button if it appears. It then
+clicks **Try the demo**, so the database also sees regular queries - free
+Supabase projects pause after about a week without any.
+
+1. On GitHub, open **Settings → Secrets and variables → Actions → Variables**
+   and add a repository variable `STREAMLIT_APP_URL` with your app's URL
+   (e.g. `https://your-app.streamlit.app`).
+2. Open the **Actions** tab, pick *Keep Streamlit app awake* and click
+   **Run workflow** once to check it works.
+
+GitHub pauses scheduled workflows in repositories that have had no commits for
+60 days; if that happens, re-enable it from the Actions tab.
+
 ### Configuration reference
 
 | Variable               | Effect                                                          |
@@ -81,7 +106,7 @@ taskflow/
   presets.py               Saved sidebar filter combinations
   analytics.py             Filtering, sorting, reporting, CSV export (pure functions)
   activity.py               Audit log
-  demo.py                    One-click sample data
+  demo.py                    Sample data and the one-click guest demo
   ui/                         Streamlit rendering, kept separate from the data layer
 tests/                  pytest suite covering the taskflow package
 ```

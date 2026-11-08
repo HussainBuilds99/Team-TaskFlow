@@ -16,7 +16,7 @@ from ..config import (
 )
 from ..tasks import get_tasks
 from ..users import get_all_users, refresh_session_user
-from ..utils import escape_html
+from ..utils import escape_html, is_overdue, try_parse_due_date
 from .common import render_flashes, render_kpis
 from .forms import show_create_task_form
 from .panels import (
@@ -48,7 +48,23 @@ def _render_hero(current_user) -> None:
     )
 
 
-def _sidebar_filters(users) -> tuple[TaskFilters, str]:
+def _default_start_date(tasks) -> date:
+    """Start of the default due-date window.
+
+    Normally 30 days back, but stretched to the oldest overdue task so that
+    long-neglected work is never hidden by the default filters (it would
+    otherwise drop out of the list, the KPIs and the overdue warning).
+    """
+    start = date.today() - timedelta(days=DEFAULT_WINDOW_BACK_DAYS)
+    overdue_dates = [
+        due
+        for due in (try_parse_due_date(task["due_date"]) for task in tasks if is_overdue(task))
+        if due is not None
+    ]
+    return min([start, *overdue_dates])
+
+
+def _sidebar_filters(users, tasks) -> tuple[TaskFilters, str]:
     """Render the sidebar and return the chosen filters plus the sort key."""
     st.sidebar.selectbox("Visual Theme", THEME_OPTIONS, key="ui_theme")
     st.sidebar.header("Filters")
@@ -73,7 +89,7 @@ def _sidebar_filters(users) -> tuple[TaskFilters, str]:
         "filter_overdue_only": False,
         "filter_include_archived": False,
         "filter_sort_key": SORT_OPTIONS[0],
-        "filter_start_date": date.today() - timedelta(days=DEFAULT_WINDOW_BACK_DAYS),
+        "filter_start_date": _default_start_date(tasks),
         "filter_end_date": date.today() + timedelta(days=DEFAULT_WINDOW_FORWARD_DAYS),
     }
     for key, value in defaults.items():
@@ -145,7 +161,7 @@ def show_dashboard() -> None:
 
     tasks = get_tasks()
     users = get_all_users()
-    filters, sort_key = _sidebar_filters(users)
+    filters, sort_key = _sidebar_filters(users, tasks)
     inject_styles(st.session_state.ui_theme)
 
     _render_hero(current_user)

@@ -257,7 +257,7 @@ _INDEXES = (
 def _existing_columns(connection, dialect: str, table_name: str) -> set[str]:
     if dialect == "postgresql":
         rows = connection.execute(
-            text("SELECT column_name FROM information_schema.columns WHERE table_name = :t"),
+            text("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = :t"),
             {"t": table_name},
         ).all()
         return {row[0] for row in rows}

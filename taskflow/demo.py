@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import secrets
 import threading
+from collections import defaultdict
 from datetime import date, timedelta
 
 from . import db
@@ -173,6 +174,21 @@ def _ensure_guest_tasks(guest) -> None:
         )
 
 
+def _refresh_guest_dates(guest) -> None:
+    """Move the sample tasks back to their usual due dates relative to today.
+
+    The samples are created once, so without this the demo would look more and
+    more overdue with every day that passes after it was first opened.
+    """
+    for title, _description, _category, _assignee, due, *_rest in _demo_tasks(
+        defaultdict(lambda: None)
+    ):
+        db.execute(
+            "UPDATE tasks SET due_date = ? WHERE creator_id = ? AND title = ? AND due_date <> ?",
+            (due.isoformat(), guest["id"], title, due.isoformat()),
+        )
+
+
 def start_guest_session() -> tuple[dict | None, str]:
     """Return the shared guest account (creating it and its sample data if needed)."""
     with _guest_lock:
@@ -185,6 +201,7 @@ def start_guest_session() -> tuple[dict | None, str]:
         if guest is None:
             return None, "The demo is unavailable right now. Please register instead."
         _ensure_guest_tasks(guest)
+        _refresh_guest_dates(guest)
 
     log_activity(guest["id"], "Login", "Guest started a demo session")
     return guest, "You're exploring the demo workspace."

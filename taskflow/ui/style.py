@@ -30,14 +30,6 @@ _CSS = """
 .tm-welcome { font-size: 1.6rem; font-weight: 700; margin: 0; }
 .tm-sub { color: var(--tm-muted); margin: 0.15rem 0 0; }
 
-/* Counter tiles */
-.tm-kpi-wrap { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.6rem; margin: 1rem 0 1.25rem; }
-@media (max-width: 900px) { .tm-kpi-wrap { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 520px) { .tm-kpi-wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.tm-kpi { border: 1px solid var(--tm-line); border-left: 4px solid var(--kpi, #6366f1); border-radius: 10px; padding: 0.7rem 0.85rem; background: var(--tm-fill); }
-.tm-kpi .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tm-muted); }
-.tm-kpi .value { font-size: 1.5rem; font-weight: 700; margin-top: 0.1rem; }
-
 /* Kanban cards */
 .tm-kanban-col { font-weight: 600; padding: 0.4rem 0; margin-bottom: 0.5rem; border-bottom: 1px solid var(--tm-line); }
 .tm-card { border: 1px solid var(--tm-line); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 0.65rem; background: var(--tm-fill); }

@@ -21,6 +21,7 @@ from ..tasks import bulk_update_tasks, import_tasks_from_csv
 from ..users import update_profile
 from ..utils import escape_html, is_overdue
 from .common import dataframe, report
+from .widgets import due_label
 
 # Filter values applied from a preset are parked here and picked up by the
 # sidebar on the next run: Streamlit forbids writing to a widget's state key
@@ -68,9 +69,9 @@ def show_kanban_tab(tasks) -> None:
                 st.markdown(
                     f"""
                     <div class="{card_class}">
-                        <strong>#{escape_html(task['id'])} · {escape_html(task['title'])}</strong>
+                        <strong>{escape_html(task['title'])}</strong>
                         <div class="tm-card-meta">
-                            {escape_html(task['assignee_name'])} · Due {escape_html(task['due_date'])}<br>
+                            {escape_html(task['assignee_name'])} · {escape_html(due_label(task))}<br>
                             {escape_html(task['priority'])} priority · {progress}%
                         </div>
                         <div class="tm-bar"><span style="width:{progress}%"></span></div>

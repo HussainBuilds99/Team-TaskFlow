@@ -24,9 +24,10 @@ from ..subtasks import (
     subtask_progress,
 )
 from ..tasks import archive_task, create_next_recurring_task, delete_task, restore_task, set_task_status
-from ..utils import escape_html, is_overdue
-from .common import confirm_button, dataframe, flash, render_task_chips, report
+from ..utils import escape_html
+from .common import confirm_button, dataframe, flash, report
 from .forms import show_edit_task_form
+from .widgets import render_task_badges, task_header
 
 PAGE_SIZE_OPTIONS = [5, 10, 25, 50]
 # Files above this size are fetched from disk only when the user asks, so the
@@ -243,20 +244,6 @@ def _render_actions(task, current_user) -> None:
             report(delete_task(task["id"], current_user))
 
 
-def _task_header(task) -> str:
-    parts = [
-        f"#{task['id']} · {task['title']}",
-        task["status"],
-        task["priority"],
-        f"Due {task['due_date']}",
-    ]
-    if task.get("archived", 0):
-        parts.append("Archived")
-    if is_overdue(task):
-        parts.append("OVERDUE")
-    return "  |  ".join(parts)
-
-
 def show_task_list(current_user, filtered_tasks) -> None:
     """Render the tasks table plus one detail panel per task on the page."""
     st.subheader("Tasks")
@@ -270,9 +257,11 @@ def show_task_list(current_user, filtered_tasks) -> None:
         file_name="task_report.csv",
         mime="text/csv",
     )
-    dataframe(format_task_table(filtered_tasks))
+    with st.expander("Table view"):
+        with st.expander("Table view"):
+        dataframe(format_task_table(filtered_tasks))
 
-    st.markdown("### Manage Tasks")
+    st.caption("Open a task to see its details, checklist, comments and files.")
     page_tasks = _paginate(filtered_tasks, "tasks")
     page_ids = [task["id"] for task in page_tasks]
 
@@ -282,8 +271,8 @@ def show_task_list(current_user, filtered_tasks) -> None:
     attachments_by_task = get_attachments_for_tasks(page_ids)
 
     for task in page_tasks:
-        with st.expander(_task_header(task)):
-            render_task_chips(task)
+        with st.expander(task_header(task)):
+            render_task_badges(task)
             st.write(f"**Description:** {task['description'] or 'No description provided.'}")
 
             meta_columns = st.columns(3)

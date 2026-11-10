@@ -12,7 +12,7 @@ from pathlib import Path
 
 APP_NAME = "Team TaskFlow"
 APP_ICON = "🗂️"
-APP_TAGLINE = "Collaborative task management for students, clubs, and teams."
+APP_TAGLINE = "Collaborative task management for student teams, clubs and small groups."
 
 # Task vocabulary -----------------------------------------------------------
 STATUS_OPTIONS = ["Pending", "In Progress", "Completed"]
@@ -62,14 +62,6 @@ ALLOWED_ATTACHMENT_EXTENSIONS = frozenset(
 )
 MAX_ATTACHMENT_SIZE_MB = 10
 MAX_ATTACHMENT_SIZE_BYTES = MAX_ATTACHMENT_SIZE_MB * 1024 * 1024
-
-# Theming -------------------------------------------------------------------
-THEME_OPTIONS = ["Ocean Slate", "Midnight Indigo", "Warm Ember"]
-LEGACY_THEME_MAP = {
-    "Aurora Glass": "Ocean Slate",
-    "Cyber Neon": "Midnight Indigo",
-    "Sunset Pulse": "Warm Ember",
-}
 
 _DEFAULT_DB_PATH = "taskmanager.db"
 _DEFAULT_UPLOAD_DIR = "task_uploads"

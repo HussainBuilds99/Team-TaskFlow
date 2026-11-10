@@ -8,8 +8,8 @@ import streamlit as st
 
 from .config import APP_ICON, APP_NAME
 from .db import init_db
-from .ui.auth_page import show_auth_page
-from .ui.dashboard import show_dashboard
+from .ui.login import show_auth_page
+from .ui.workspace import show_dashboard
 
 
 def _load_secrets_into_env() -> None:

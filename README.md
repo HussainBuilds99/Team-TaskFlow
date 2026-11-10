@@ -11,7 +11,7 @@ A collaborative task manager for small teams, clubs, and classrooms, built with
 - Every account has equal access; a task can be edited by its creator or
   assignee, and deleted/archived by its creator
 - CSV export/import and an audit trail of every action
-- Three built-in visual themes
+- Light and dark themes (switch from the app's ⋮ menu → Settings)
 - One-click **Try the demo** button: explore a ready-made workspace without
   registering
 

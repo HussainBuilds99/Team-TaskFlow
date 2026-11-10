@@ -1,4 +1,4 @@
-"""Display helpers: coloured badges, friendly dates, counter tiles and cached reads."""
+"""Display helpers: coloured badges, friendly dates and cached reads."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import streamlit as st
 
 from ..tasks import get_tasks
 from ..users import get_all_users
-from ..utils import escape_html, is_overdue, try_parse_due_date
+from ..utils import is_overdue, try_parse_due_date
 
 PRIORITY_COLORS = {"High": "red", "Medium": "orange", "Low": "green"}
 STATUS_COLORS = {"Pending": "gray", "In Progress": "blue", "Completed": "green"}
@@ -99,21 +99,3 @@ def render_task_badges(task) -> None:
     tags = task.get("tags")
     if tags:
         st.caption("Tags: " + ", ".join(md_escape(tag) for tag in tags.split(",")))
-
-
-def render_kpis(summary) -> None:
-    """The row of counter tiles above the tabs."""
-    tiles = [
-        ("Total", summary["total"], "#6366f1"),
-        ("In progress", summary["in_progress"], "#3b82f6"),
-        ("Pending", summary["pending"], "#94a3b8"),
-        ("Completed", summary["completed"], "#22c55e"),
-        ("Overdue", summary["overdue"], "#ef4444"),
-        ("Due today", summary["due_today"], "#f59e0b"),
-    ]
-    html = "".join(
-        f'<div class="tm-kpi" style="--kpi:{color}"><div class="label">{escape_html(label)}</div>'
-        f'<div class="value">{escape_html(value)}</div></div>'
-        for label, value, color in tiles
-    )
-    st.markdown(f'<div class="tm-kpi-wrap">{html}</div>', unsafe_allow_html=True)

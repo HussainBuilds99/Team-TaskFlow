@@ -1,0 +1,15 @@
+# Team TaskFlow's colours. Streamlit applies these to every built-in widget,
+# and each visitor can switch between light and dark from the app menu
+# (top-right ⋮ -> Settings), so widgets and page never disagree.
+
+[theme.light]
+primaryColor = "#4F46E5"
+backgroundColor = "#F8FAFC"
+secondaryBackgroundColor = "#EEF2F7"
+textColor = "#0F172A"
+
+[theme.dark]
+primaryColor = "#818CF8"
+backgroundColor = "#0F1117"
+secondaryBackgroundColor = "#1A1D29"
+textColor = "#E5E7EB"

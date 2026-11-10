@@ -10,7 +10,6 @@ from ..analytics import (
     build_team_summary,
     build_workload_rows,
     count_by,
-    productivity_summary,
     tag_cloud,
     visible_tasks_for,
 )
@@ -162,24 +161,6 @@ def show_calendar_tab(tasks) -> None:
 
 
 # --- Reports and activity --------------------------------------------------
-
-def show_report_tab(tasks, users) -> None:
-    """Summary suited to sharing with a supervisor or teacher."""
-    st.subheader("Progress Report")
-    summary = productivity_summary(tasks)
-    metric_columns = st.columns(4)
-    metric_columns[0].metric("Visible tasks", summary["total"])
-    metric_columns[1].metric("Completed", summary["completed"])
-    metric_columns[2].metric("Overdue", summary["overdue"])
-    metric_columns[3].metric("Completion rate", f"{summary['completion_rate']}%")
-
-    st.caption(
-        f"Average progress {summary['average_progress']}% · "
-        f"{summary['in_progress']} in progress · {summary['pending']} pending · "
-        f"{summary['archived']} archived · {len(users)} registered user(s)"
-    )
-    dataframe(build_team_summary(tasks, users))
-
 
 def show_activity_tab() -> None:
     """The audit log."""

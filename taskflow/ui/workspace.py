@@ -59,4 +59,155 @@ def _sidebar_account(current_user) -> None:
     st.sidebar.divider()
 
 
-#__PART2__
+def _sidebar_filters(users, tasks) -> tuple[TaskFilters, str]:
+    """Render the filters and return them plus the sort key."""
+    st.sidebar.subheader("Filters")
+
+    assignee_options = ["All"] + [user["full_name"] for user in users]
+
+    # A preset applied from the Workspace tab cannot write to widget-backed
+    # state in the same run, so it is parked here and applied on the next one -
+    # before any of these widgets exist.
+    pending = st.session_state.pop(PENDING_FILTERS_KEY, None)
+    if pending:
+        st.session_state.update(pending)
+
+    defaults = {
+        "filter_search_text": "",
+        "filter_tag_filter": "",
+        "filter_selected_statuses": list(STATUS_OPTIONS),
+        "filter_selected_priorities": list(PRIORITY_OPTIONS),
+        "filter_selected_categories": list(CATEGORY_OPTIONS),
+        "filter_assigned_filter": "All",
+        "filter_mine_only": False,
+        "filter_overdue_only": False,
+        "filter_include_archived": False,
+        "filter_sort_key": SORT_OPTIONS[0],
+        "filter_start_date": _default_start_date(tasks),
+        "filter_end_date": date.today() + timedelta(days=DEFAULT_WINDOW_FORWARD_DAYS),
+    }
+    for key, value in defaults.items():
+        st.session_state.setdefault(key, value)
+
+    # A saved preset or a deleted teammate can leave a value that is no longer
+    # offered; reset it before the widget is created so Streamlit does not raise.
+    if st.session_state["filter_assigned_filter"] not in assignee_options:
+        st.session_state["filter_assigned_filter"] = "All"
+
+    st.sidebar.text_input(
+        "Search", key="filter_search_text", placeholder="Title, description or tags"
+    )
+    st.sidebar.multiselect("Status", STATUS_OPTIONS, key="filter_selected_statuses")
+    st.sidebar.selectbox("Sort by", SORT_OPTIONS, key="filter_sort_key")
+    st.sidebar.checkbox("Only my tasks", key="filter_mine_only")
+    st.sidebar.checkbox("Only overdue tasks", key="filter_overdue_only")
+
+    with st.sidebar.expander("More filters"):
+        st.text_input("Tags", key="filter_tag_filter", placeholder="urgent, design")
+        st.multiselect("Priority", PRIORITY_OPTIONS, key="filter_selected_priorities")
+        st.multiselect("Category", CATEGORY_OPTIONS, key="filter_selected_categories")
+        st.selectbox("Assigned to", assignee_options, key="filter_assigned_filter")
+        st.date_input("Due from", key="filter_start_date")
+        st.date_input("Due until", key="filter_end_date")
+        st.checkbox("Include archived tasks", key="filter_include_archived")
+
+    if st.sidebar.button("Reset filters", width="stretch"):
+        for key in defaults:
+            st.session_state.pop(key, None)
+        st.rerun()
+
+    filters = TaskFilters(
+        search_text=st.session_state["filter_search_text"],
+        tag_filter=st.session_state["filter_tag_filter"],
+        statuses=st.session_state["filter_selected_statuses"],
+        priorities=st.session_state["filter_selected_priorities"],
+        categories=st.session_state["filter_selected_categories"],
+        assignee=st.session_state["filter_assigned_filter"],
+        mine_only=st.session_state["filter_mine_only"],
+        overdue_only=st.session_state["filter_overdue_only"],
+        include_archived=st.session_state["filter_include_archived"],
+        start_date=st.session_state["filter_start_date"],
+        end_date=st.session_state["filter_end_date"],
+    )
+    return filters, st.session_state["filter_sort_key"]
+
+
+def _render_header(current_user, tasks) -> None:
+    """Greeting plus a one-line summary of the viewer's own open work."""
+    name = (current_user.get("full_name") or "").strip()
+    first_name = name.split()[0] if name else current_user["username"]
+    open_tasks = [
+        task
+        for task in tasks
+        if task["assignee_id"] == current_user["id"]
+        and task["status"] != "Completed"
+        and not task.get("archived", 0)
+    ]
+    overdue = sum(is_overdue(task) for task in open_tasks)
+
+    summary = f"{len(open_tasks)} open task{'s' if len(open_tasks) != 1 else ''} assigned to you"
+    if overdue:
+        summary += f" · {overdue} overdue"
+    st.markdown(
+        f'<p class="tm-welcome">Hi, {escape_html(first_name)}</p>'
+        f'<p class="tm-sub">{escape_html(summary)}</p>',
+        unsafe_allow_html=True,
+    )
+
+
+def show_dashboard() -> None:
+    """Render the whole signed-in experience."""
+    # Read the account back rather than trusting the copy captured at login, in
+    # case the profile was edited from another tab.
+    current_user = refresh_session_user(st.session_state.user)
+    if not current_user:
+        st.session_state.user = None
+        st.rerun()
+    st.session_state.user = current_user
+
+    inject_styles()
+    tasks = load_tasks()
+    users = load_users()
+
+    _sidebar_account(current_user)
+    filters, sort_key = _sidebar_filters(users, tasks)
+
+    _render_header(current_user, tasks)
+    render_flashes()
+
+    if filters.start_date and filters.end_date and filters.start_date > filters.end_date:
+        st.error("The 'Due from' date cannot be after the 'Due until' date.")
+        return
+
+    filtered_tasks = sort_tasks(filter_tasks(tasks, current_user, filters), sort_key)
+    summary = productivity_summary(filtered_tasks)
+    render_kpis(summary)
+
+    tasks_tab, board_tab, create_tab, insights_tab, workspace_tab = st.tabs(
+        ["Tasks", "Board", "New task", "Insights", "Workspace"]
+    )
+    with tasks_tab:
+        show_task_list(current_user, filtered_tasks)
+    with board_tab:
+        show_kanban_tab(filtered_tasks)
+        st.divider()
+        show_calendar_tab(filtered_tasks)
+    with create_tab:
+        show_create_task_form(current_user)
+    with insights_tab:
+        st.caption(
+            f"Completion rate {summary['completion_rate']}% · "
+            f"average progress {summary['average_progress']}% across "
+            f"{summary['total']} task(s) matching your filters."
+        )
+        show_analytics_tab(filtered_tasks, users)
+        st.divider()
+        show_planner_tab(filtered_tasks, users)
+    with workspace_tab:
+        tools_tab, activity_tab, profile_tab = st.tabs(["Bulk tools", "Activity log", "Profile"])
+        with tools_tab:
+            show_operations_tab(current_user, users, filtered_tasks, tasks)
+        with activity_tab:
+            show_activity_tab()
+        with profile_tab:
+            show_profile_tab(current_user)

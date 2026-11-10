@@ -1,3 +1,6 @@
+from datetime import date, timedelta
+
+from taskflow import db
 from taskflow.demo import GUEST_USERNAME, start_guest_session
 from taskflow.tasks import archive_task, bulk_update_tasks, get_task, get_tasks
 from taskflow.users import authenticate
@@ -69,3 +72,13 @@ def test_bulk_restore_without_status_brings_back_previous_status(admin, make_tas
     restored = get_task(task["id"])
     assert restored["archived"] == 0
     assert restored["status"] == "In Progress"
+
+
+def test_guest_session_moves_stale_sample_dates_back_to_today():
+    guest, _ = start_guest_session()
+    db.execute("UPDATE tasks SET due_date = ? WHERE creator_id = ?", ("2000-01-01", guest["id"]))
+
+    start_guest_session()
+    due_dates = [task["due_date"] for task in _guest_tasks(guest)]
+    assert "2000-01-01" not in due_dates
+    assert min(due_dates) >= (date.today() - timedelta(days=1)).isoformat()

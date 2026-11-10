@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import streamlit as st
 
-from ..utils import escape_html
-
 FLASH_KEY = "_flash_messages"
 
 
@@ -45,61 +43,6 @@ def report(result, rerun_on_success: bool = True) -> bool:
     else:
         st.error(message)
     return success
-
-
-def chip(label: str, css_class: str = "") -> str:
-    """Build one HTML chip with the label escaped."""
-    classes = f"tm-chip {css_class}".strip()
-    return f'<span class="{classes}">{escape_html(label)}</span>'
-
-
-def status_chip_class(status: str) -> str:
-    return {
-        "Pending": "tm-pending",
-        "In Progress": "tm-progress",
-        "Completed": "tm-completed",
-    }.get(status, "tm-pending")
-
-
-def priority_chip_class(priority: str) -> str:
-    return {"High": "tm-high", "Medium": "tm-medium", "Low": "tm-low"}.get(priority, "tm-low")
-
-
-def render_task_chips(task) -> None:
-    """Status/priority/category/progress chips for a task."""
-    chips = [
-        chip(task["priority"], priority_chip_class(task["priority"])),
-        chip(task["status"], status_chip_class(task["status"])),
-        chip(task["category"]),
-        chip(f"Progress: {int(task.get('progress') or 0)}%"),
-    ]
-    if task.get("recurrence", "None") != "None":
-        chips.append(chip(f"Repeats {task['recurrence']}"))
-    if task.get("archived", 0):
-        chips.append(chip("Archived", "tm-archived"))
-    st.markdown(f"<div>{''.join(chips)}</div>", unsafe_allow_html=True)
-
-    tags = task.get("tags")
-    if tags:
-        st.caption(f"Tags: {tags}")
-
-
-def render_kpis(summary) -> None:
-    """The coloured counter strip at the top of the dashboard."""
-    cards = [
-        ("Total", summary["total"], "tm-kpi-accent"),
-        ("Completed", summary["completed"], "tm-kpi-success"),
-        ("Pending", summary["pending"], "tm-kpi-info"),
-        ("In Progress", summary["in_progress"], "tm-kpi-warn"),
-        ("Overdue", summary["overdue"], "tm-kpi-danger"),
-        ("Due Today", summary["due_today"], "tm-kpi-accent"),
-    ]
-    html = "".join(
-        f'<div class="tm-kpi {css_class}"><div class="label">{escape_html(label)}</div>'
-        f'<div class="value">{escape_html(value)}</div></div>'
-        for label, value, css_class in cards
-    )
-    st.markdown(f'<div class="tm-kpi-wrap">{html}</div>', unsafe_allow_html=True)
 
 
 def dataframe(rows, **kwargs) -> None:

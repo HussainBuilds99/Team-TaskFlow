@@ -16,6 +16,7 @@ def flash(message: str, kind: str = "success") -> None:
     browser, which is why every mutating action queues its feedback instead.
     """
     st.session_state.setdefault(FLASH_KEY, []).append((kind, message))
+    st.cache_data.clear()  # every change is followed by a flash, so reload fresh data
 
 
 def render_flashes() -> None:

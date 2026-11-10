@@ -14,7 +14,7 @@ import streamlit as st
 _CSS = """
 :root { --tm-muted: #8b93a7; --tm-line: rgba(128, 128, 128, 0.22); --tm-fill: rgba(128, 128, 128, 0.06); }
 
-.block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1100px; }
+.block-container { padding-top: 3.5rem; padding-bottom: 3rem; max-width: 1100px; }
 
 /* Sign-in page */
 .tm-hero { text-align: center; padding: 2rem 1rem 0.5rem; }

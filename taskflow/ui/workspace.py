@@ -1,4 +1,4 @@
-"""The signed-in workspace: account and filters in the sidebar, counters and five tabs."""
+"""The signed-in workspace: account and filters in the sidebar, a header and five tabs."""
 
 from __future__ import annotations
 
@@ -9,9 +9,9 @@ import streamlit as st
 from ..analytics import TaskFilters, filter_tasks, productivity_summary, sort_tasks
 from ..config import CATEGORY_OPTIONS, PRIORITY_OPTIONS, SORT_OPTIONS, STATUS_OPTIONS
 from ..users import refresh_session_user
-from ..utils import escape_html, is_overdue, try_parse_due_date
+from ..utils import is_overdue, try_parse_due_date
 from .common import render_flashes
-from .forms import show_create_task_form
+from .home import render_header, show_home_tab
 from .panels import (
     PENDING_FILTERS_KEY,
     show_activity_tab,
@@ -24,7 +24,7 @@ from .panels import (
 )
 from .style import inject_styles
 from .task_list import show_task_list
-from .widgets import load_tasks, load_users, md_escape, render_kpis
+from .widgets import load_tasks, load_users, md_escape
 
 DEFAULT_WINDOW_BACK_DAYS = 30
 DEFAULT_WINDOW_FORWARD_DAYS = 365
@@ -132,29 +132,6 @@ def _sidebar_filters(users, tasks) -> tuple[TaskFilters, str]:
     return filters, st.session_state["filter_sort_key"]
 
 
-def _render_header(current_user, tasks) -> None:
-    """Greeting plus a one-line summary of the viewer's own open work."""
-    name = (current_user.get("full_name") or "").strip()
-    first_name = name.split()[0] if name else current_user["username"]
-    open_tasks = [
-        task
-        for task in tasks
-        if task["assignee_id"] == current_user["id"]
-        and task["status"] != "Completed"
-        and not task.get("archived", 0)
-    ]
-    overdue = sum(is_overdue(task) for task in open_tasks)
-
-    summary = f"{len(open_tasks)} open task{'s' if len(open_tasks) != 1 else ''} assigned to you"
-    if overdue:
-        summary += f" · {overdue} overdue"
-    st.markdown(
-        f'<p class="tm-welcome">Hi, {escape_html(first_name)}</p>'
-        f'<p class="tm-sub">{escape_html(summary)}</p>',
-        unsafe_allow_html=True,
-    )
-
-
 def show_dashboard() -> None:
     """Render the whole signed-in experience."""
     # Read the account back rather than trusting the copy captured at login, in
@@ -172,7 +149,7 @@ def show_dashboard() -> None:
     _sidebar_account(current_user)
     filters, sort_key = _sidebar_filters(users, tasks)
 
-    _render_header(current_user, tasks)
+    render_header(current_user, tasks)
     render_flashes()
 
     if filters.start_date and filters.end_date and filters.start_date > filters.end_date:
@@ -181,19 +158,18 @@ def show_dashboard() -> None:
 
     filtered_tasks = sort_tasks(filter_tasks(tasks, current_user, filters), sort_key)
     summary = productivity_summary(filtered_tasks)
-    render_kpis(summary)
 
-    tasks_tab, board_tab, create_tab, insights_tab, workspace_tab = st.tabs(
-        ["Tasks", "Board", "New task", "Insights", "Workspace"]
+    home_tab, tasks_tab, board_tab, insights_tab, workspace_tab = st.tabs(
+        ["Home", "Tasks", "Board", "Insights", "Workspace"]
     )
+    with home_tab:
+        show_home_tab(current_user, filtered_tasks, users)
     with tasks_tab:
         show_task_list(current_user, filtered_tasks)
     with board_tab:
         show_kanban_tab(filtered_tasks)
         st.divider()
         show_calendar_tab(filtered_tasks)
-    with create_tab:
-        show_create_task_form(current_user)
     with insights_tab:
         st.caption(
             f"Completion rate {summary['completion_rate']}% · "

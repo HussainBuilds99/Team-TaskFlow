@@ -258,7 +258,6 @@ def show_task_list(current_user, filtered_tasks) -> None:
         mime="text/csv",
     )
     with st.expander("Table view"):
-        with st.expander("Table view"):
         dataframe(format_task_table(filtered_tasks))
 
     st.caption("Open a task to see its details, checklist, comments and files.")
